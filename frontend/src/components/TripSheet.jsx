@@ -1,18 +1,15 @@
 import { useMemo } from 'react';
 import { ORIGIN } from '../config';
-import { ROAD_FACTOR, VEHICLE_TIERS, arrivalClock, distanceKm, fareForTier, formatDuration } from '../utils/trip';
+import { VEHICLE_TIERS, arrivalClock, distanceKm, fareForTier } from '../utils/trip';
 import { ClockIcon, PinIcon, ShieldIcon, Spinner, WalletIcon } from './Icons';
 
 /**
  * SAFETY GATE: the booking sheet. Nothing is dispatched until the rider
  * physically taps "Confirm Ride". Voice recognition only pre-fills this form.
  */
-export default function TripSheet({ result, roadRoute, tierId, onTierChange, onConfirm, onRetry, confirming }) {
+export default function TripSheet({ result, tierId, onTierChange, onConfirm, onRetry, confirming }) {
   const tier = VEHICLE_TIERS.find((t) => t.id === tierId) ?? VEHICLE_TIERS[0];
-  const km = useMemo(
-    () => result.distance_km ?? distanceKm(ORIGIN, result.coordinates) * ROAD_FACTOR,
-    [result.distance_km, result.coordinates],
-  );
+  const km = useMemo(() => distanceKm(ORIGIN, result.coordinates), [result.coordinates]);
 
   return (
     <section
@@ -29,13 +26,10 @@ export default function TripSheet({ result, roadRoute, tierId, onTierChange, onC
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-slate-500">Destination</p>
-          <h2 id="trip-sheet-title" className="line-clamp-2 text-lg font-bold leading-tight text-slate-900">
+          <h2 id="trip-sheet-title" className="truncate text-lg font-bold text-slate-900">
             {result.detected_landmark}
           </h2>
-          <p className="text-xs text-slate-500">
-            {result.city && `${result.city} · `}
-            {km < 100 ? km.toFixed(1) : Math.round(km)} km {roadRoute ? 'by road' : 'est.'}
-          </p>
+          <p className="text-xs text-slate-500">{km.toFixed(1)} km from pickup</p>
         </div>
         <button
           type="button"
@@ -53,16 +47,15 @@ export default function TripSheet({ result, roadRoute, tierId, onTierChange, onC
             <WalletIcon className="h-3.5 w-3.5" /> Estimated fare
           </p>
           <p className="mt-0.5 text-base font-bold text-slate-900">{fareForTier(result.estimated_fare, tier)}</p>
-          <p className="text-[11px] text-slate-500">{tier.name}</p>
         </div>
         <div className="rounded-xl bg-slate-50 px-3 py-2.5">
           <p className="flex items-center gap-1.5 text-xs text-slate-500">
             <ClockIcon className="h-3.5 w-3.5" /> Arrival
           </p>
           <p className="mt-0.5 text-base font-bold text-slate-900">
-            {formatDuration(result.eta_minutes)}
+            {result.eta_minutes ? `${result.eta_minutes} min` : '—'}
+            <span className="ml-1 text-xs font-medium text-slate-500">· {arrivalClock(result.eta_minutes)}</span>
           </p>
-          <p className="text-[11px] text-slate-500">Arrive ~{arrivalClock(result.eta_minutes)}</p>
         </div>
       </div>
 
