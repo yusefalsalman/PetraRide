@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
-import { MOCK_RESPONSES } from '../data/mockResponses';
-import { buildRoute } from '../utils/trip';
+import { JORDAN_PLACES } from '../data/jordanPlaces';
+
+// Governorate centres, labelled on the fallback backdrop.
+const GOVERNORATE_IDS = ['amman-downtown', 'zarqa', 'irbid', 'aqaba', 'mafraq', 'jerash', 'ajloun', 'madaba', 'salt', 'karak', 'tafila', 'maan'];
+const OFFLINE_LABELS = JORDAN_PLACES.filter((p) => GOVERNORATE_IDS.includes(p.id));
 
 const landmarkLabel = (name) =>
   L.divIcon({
@@ -56,12 +59,7 @@ function CameraController({ origin, destination }) {
   return null;
 }
 
-export default function MapView({ origin, destination, showRoute }) {
-  const route = useMemo(
-    () => (destination ? buildRoute(origin, destination) : null),
-    [origin, destination],
-  );
-
+export default function MapView({ origin, destination, route }) {
   // If tiles can't load (offline, sandboxed), fall back to a plain backdrop
   // that still labels the known landmarks so the map stays readable.
   const [tilesFailed, setTilesFailed] = useState(false);
@@ -82,11 +80,11 @@ export default function MapView({ origin, destination, showRoute }) {
         eventHandlers={{ tileerror: () => setTilesFailed(true) }}
       />
       {tilesFailed &&
-        MOCK_RESPONSES.map((m) => (
+        OFFLINE_LABELS.map((p) => (
           <Marker
-            key={m.detected_landmark}
-            position={[m.coordinates.lat, m.coordinates.lng]}
-            icon={landmarkLabel(m.detected_landmark.split(' — ')[0].split(' (')[0])}
+            key={p.id}
+            position={[p.lat, p.lng]}
+            icon={landmarkLabel(p.id === 'amman-downtown' ? 'Amman' : p.name)}
             interactive={false}
           />
         ))}
@@ -99,10 +97,13 @@ export default function MapView({ origin, destination, showRoute }) {
           title="Destination"
         />
       )}
-      {route && showRoute && (
+      {route && destination && (
         <>
-          <Polyline positions={route} pathOptions={{ color: '#ffffff', weight: 9, opacity: 0.9 }} />
-          <Polyline positions={route} pathOptions={{ color: '#2563EB', weight: 5, opacity: 1 }} />
+          <Polyline positions={route.points} pathOptions={{ color: '#ffffff', weight: 9, opacity: 0.9 }} />
+          <Polyline
+            positions={route.points}
+            pathOptions={{ color: '#2563EB', weight: 5, opacity: 1, dashArray: route.road ? null : '2 10' }}
+          />
         </>
       )}
       <CameraController origin={origin} destination={destination} />
