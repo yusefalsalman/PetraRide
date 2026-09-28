@@ -7,7 +7,7 @@ import MapView from './components/MapView';
 import SearchPanel from './components/SearchPanel';
 import TranscriptionCard from './components/TranscriptionCard';
 import TripSheet from './components/TripSheet';
-import { ORIGIN } from './config';
+import { ORIGIN, USE_MOCK } from './config';
 import { useVoiceRecorder } from './hooks/useVoiceRecorder';
 import { processVoice, simulateVoice } from './services/voiceApi';
 import { createTrip } from './utils/dispatch';
@@ -50,6 +50,7 @@ export default function App() {
   const recorder = useVoiceRecorder({
     onComplete: (blob) => runPipeline(() => processVoice(blob)),
     onError: (message) => setError(message),
+    simulateWhenUnavailable: USE_MOCK,
   });
 
   const reset = useCallback(() => {

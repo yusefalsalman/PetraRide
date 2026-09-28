@@ -32,9 +32,14 @@ function describeError(err) {
  * - `stop()` finishes and calls `onComplete(blob)`.
  * - `cancel()` discards the recording.
  * - `levels` is an array of 0..1 amplitudes for the live waveform.
+ *
+ * With `simulateWhenUnavailable`, a blocked or missing microphone starts a
+ * simulated recording instead (`simulated: true`, `onComplete(null)`), so the
+ * push-to-talk flow can still be demoed on mock data.
  */
-export function useVoiceRecorder({ onComplete, onError } = {}) {
+export function useVoiceRecorder({ onComplete, onError, simulateWhenUnavailable = false } = {}) {
   const [status, setStatus] = useState('idle'); // idle | requesting | recording
+  const [simulated, setSimulated] = useState(false);
   const [levels, setLevels] = useState(SILENT_LEVELS);
   const [elapsedMs, setElapsedMs] = useState(0);
 
@@ -61,6 +66,7 @@ export function useVoiceRecorder({ onComplete, onError } = {}) {
     }
     audioCtxRef.current = null;
     recorderRef.current = null;
+    setSimulated(false);
     setLevels(SILENT_LEVELS);
     setElapsedMs(0);
     setStatus('idle');
@@ -94,6 +100,32 @@ export function useVoiceRecorder({ onComplete, onError } = {}) {
     tick();
   }, []);
 
+  const startSimulation = useCallback(() => {
+    const SIMULATED_MS = 2800;
+    startedAtRef.current = Date.now();
+    const tick = () => {
+      const t = Date.now() - startedAtRef.current;
+      setLevels(SILENT_LEVELS.map((_, i) => 0.25 + 0.65 * Math.abs(Math.sin(t / 140 + i * 0.9)) * Math.random()));
+      setElapsedMs(t);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    // Stand-in for MediaRecorder so stop() and cancel() work unchanged.
+    recorderRef.current = {
+      state: 'recording',
+      stop() {
+        this.state = 'inactive';
+        const wasCancelled = cancelledRef.current;
+        teardown();
+        if (!wasCancelled) callbacksRef.current.onComplete?.(null);
+      },
+    };
+    setSimulated(true);
+    setStatus('recording');
+    tick();
+    autoStopRef.current = setTimeout(() => recorderRef.current?.stop(), SIMULATED_MS);
+  }, [teardown]);
+
   const stop = useCallback(() => {
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== 'inactive') recorder.stop();
@@ -109,6 +141,11 @@ export function useVoiceRecorder({ onComplete, onError } = {}) {
     if (recorderRef.current) return;
 
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      if (simulateWhenUnavailable) {
+        cancelledRef.current = false;
+        startSimulation();
+        return;
+      }
       callbacksRef.current.onError?.('Voice recording is not supported in this browser. Try a demo phrase instead.');
       return;
     }
@@ -152,9 +189,13 @@ export function useVoiceRecorder({ onComplete, onError } = {}) {
       autoStopRef.current = setTimeout(stop, MAX_RECORDING_MS);
     } catch (err) {
       teardown();
+      if (simulateWhenUnavailable && err?.name !== 'NotReadableError') {
+        startSimulation();
+        return;
+      }
       callbacksRef.current.onError?.(describeError(err));
     }
-  }, [startMeter, stop, teardown]);
+  }, [simulateWhenUnavailable, startMeter, startSimulation, stop, teardown]);
 
   // Release the microphone if the component unmounts mid-recording.
   useEffect(
@@ -168,5 +209,5 @@ export function useVoiceRecorder({ onComplete, onError } = {}) {
     [],
   );
 
-  return { status, levels, elapsedMs, start, stop, cancel, maxMs: MAX_RECORDING_MS };
+  return { status, simulated, levels, elapsedMs, start, stop, cancel, maxMs: MAX_RECORDING_MS };
 }

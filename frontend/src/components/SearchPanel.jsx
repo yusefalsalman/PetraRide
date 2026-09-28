@@ -30,7 +30,9 @@ export default function SearchPanel({ phase, recorder, destinationName, onMicPre
         <AudioWaves levels={recorder.levels} />
         <div className="leading-tight">
           <p className="text-sm font-semibold text-slate-900">Listening… {formatSeconds(recorder.elapsedMs)}</p>
-          <p className="text-xs text-slate-500">Tap to stop</p>
+          <p className="text-xs text-slate-500">
+            {recorder.simulated ? 'Simulated audio (demo)' : 'Tap to stop'}
+          </p>
         </div>
       </div>
     );
