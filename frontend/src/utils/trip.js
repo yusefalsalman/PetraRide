@@ -26,7 +26,7 @@ export function arrivalClock(etaMinutes, from = new Date()) {
   return arrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-/** Straight-line distance in km. */
+/** Great-circle distance in km, used for the trip summary. */
 export function distanceKm(a, b) {
   const R = 6371;
   const toRad = (d) => (d * Math.PI) / 180;
@@ -58,34 +58,4 @@ export function buildRoute(origin, destination, steps = 24) {
     ]);
   }
   return points;
-}
-
-/** Roads in Jordan run ~30% longer than the straight line on average. */
-export const ROAD_FACTOR = 1.3;
-
-/**
- * Demo fare model (Economy tier, JOD), loosely based on Amman app-ride
- * pricing: a base fare plus a per-km rate that drops on long intercity trips.
- */
-export function estimateFare(roadKm) {
-  const BASE = 0.5;
-  const CITY_RATE = 0.32; // first 25 km
-  const HIGHWAY_RATE = 0.22; // beyond 25 km
-  const fare = BASE + Math.min(roadKm, 25) * CITY_RATE + Math.max(roadKm - 25, 0) * HIGHWAY_RATE;
-  return Math.max(1, Math.round(fare * 20) / 20); // round to 0.05 JOD
-}
-
-/** City traffic for the first stretch, highway speed after that. */
-export function estimateMinutes(roadKm) {
-  const cityKm = Math.min(roadKm, 15);
-  const highwayKm = Math.max(roadKm - 15, 0);
-  return Math.max(3, Math.round(2 + (cityKm / 28) * 60 + (highwayKm / 85) * 60));
-}
-
-export function formatDuration(minutes) {
-  if (!minutes) return '—';
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m ? `${h} h ${m} min` : `${h} h`;
 }
