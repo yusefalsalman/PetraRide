@@ -29,6 +29,26 @@
   @apply bg-slate-100 font-sans;
 }
 
+/* Fallback backdrop when map tiles are unavailable. */
+.petra-offline-map {
+  background-color: #eef2f7;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.petra-landmark-label {
+  position: absolute;
+  transform: translate(-50%, 10px);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+}
+
 .leaflet-control-attribution {
   @apply !text-[9px];
 }

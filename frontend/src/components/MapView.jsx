@@ -1,7 +1,15 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
+import { MOCK_RESPONSES } from '../data/mockResponses';
 import { buildRoute } from '../utils/trip';
+
+const landmarkLabel = (name) =>
+  L.divIcon({
+    className: '',
+    iconSize: [0, 0],
+    html: `<span class="petra-landmark-label">${name}</span>`,
+  });
 
 const originIcon = L.divIcon({
   className: '',
@@ -54,20 +62,34 @@ export default function MapView({ origin, destination, showRoute }) {
     [origin, destination],
   );
 
+  // If tiles can't load (offline, sandboxed), fall back to a plain backdrop
+  // that still labels the known landmarks so the map stays readable.
+  const [tilesFailed, setTilesFailed] = useState(false);
+
   return (
     <MapContainer
       center={[origin.lat, origin.lng]}
       zoom={14}
       zoomControl={false}
       attributionControl
-      className="h-full w-full"
+      className={`h-full w-full ${tilesFailed ? 'petra-offline-map' : ''}`}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         subdomains="abcd"
         maxZoom={19}
+        eventHandlers={{ tileerror: () => setTilesFailed(true) }}
       />
+      {tilesFailed &&
+        MOCK_RESPONSES.map((m) => (
+          <Marker
+            key={m.detected_landmark}
+            position={[m.coordinates.lat, m.coordinates.lng]}
+            icon={landmarkLabel(m.detected_landmark.split(' — ')[0].split(' (')[0])}
+            interactive={false}
+          />
+        ))}
       <Marker position={[origin.lat, origin.lng]} icon={originIcon} title={origin.name} />
       {destination && (
         <Marker

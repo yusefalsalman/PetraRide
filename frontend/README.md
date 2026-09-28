@@ -38,7 +38,8 @@ npm run dev               # http://localhost:5173
 Other scripts:
 
 ```bash
-npm run build     # production build in dist/
+npm run build       # production build in dist/
+npm run build:demo  # one self-contained HTML file in dist-demo/, using mock data
 npm run preview   # serve the production build
 npm run lint      # ESLint
 ```
