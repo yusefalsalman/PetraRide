@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  body {
+    @apply bg-slate-100 font-sans text-slate-900 antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Destination pin drop animation (applied inside a Leaflet divIcon). */
+.petra-pin-drop {
+  animation: pin-drop 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes pin-drop {
+  0% { transform: translateY(-40px); opacity: 0; }
+  60% { transform: translateY(4px); opacity: 1; }
+  100% { transform: translateY(0); }
+}
+
+.leaflet-container {
+  @apply bg-slate-100 font-sans;
+}
+
+.leaflet-control-attribution {
+  @apply !text-[9px];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
